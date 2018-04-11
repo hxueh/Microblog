@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Hello, 
+        {% if current_user.is_authenticated %}
+            {% if current_user.nickname %}
+            {{ current_user.nickname }}
+            {% else %}
+            {{ current_user.username }}
+            {% endif %}
+        {% else %}
+        Stranger
+        {% endif %}!</h1>
+</div>
+{% if current_user.can(Permission.WRITE) and form %}
+<div>
+    {{ wtf.quick_form(form) }}<br>
+</div>
+{% endif %}
+
+{% if posts %}
+<ul class='posts'>
+    {% for post in posts %}
+    <li class='post'>
+        <div class="post-content">
+            <div class="post-date">{{ moment(post.time).fromNow() }}</div>
+            <div class="post-author">
+                <a href="{{ url_for('main.profile', username=post.author.username) }}">
+                    {% if post.author.nickname %}
+                    {{ post.author.nickname }}
+                    {% else %}
+                    {{ post.author.username }}
+                    {% endif %}
+                </a>
+            </div>
+            <div class="post-body">
+                {% if post.body_html %}
+                {{ post.body_html | safe }}
+                {% else %}
+                {{ post.body }}
+                {% endif %}
+            </div>
+        </div>
+        <div class='post-footer'>
+            {% if current_user.can(Permission.MODERATE) or current_user.id == post.author.id %}
+            <a href="{{ url_for('main.post_delete', id=post.id) }}">
+                <span class="label label-default">Delete</span>
+            </a>
+            {% endif %}
+            <a href="{{ url_for('main.post', id=post.id) }}">
+                <span class="label label-default">Comment</span>
+            </a>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+
+{% if prev_url %}
+<p><a href="{{ prev_url }}">Newer posts</a></p>
+{% endif %}
+{% if next_url %}
+<p><a href="{{ next_url }}">Older posts</a></p>
+{% endif %}
+
+{% endif %}
+{% endblock %}

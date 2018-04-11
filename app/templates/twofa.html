@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>{{ header }}</h1>
+</div>
+
+{% if twofa_url %}
+<div>
+<p><img id="qrcode" src="{{ qrcode(twofa_url) }}"></p>
+</div>
+{% endif %}
+
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock page_content %}

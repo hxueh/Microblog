@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ user.username }}
+{% endblock title %}
+
+{% block page_content %}
+
+<div class='page-header'>
+    <div class='profile-header'>
+        <h1>{{ user.username }}</h1>
+        {% if user.nickname or user.location %}
+        <p>
+            {% if user.nickname %}{{ user.nickname }}<br>{% endif %}
+            {% if user.location %}
+                from <a href="http://maps.google.com/?q={{ user.location }}">{{ user.location }}</a><br>
+            {% endif %}
+        </p>
+        {% endif %}
+        {% if current_user.is_admin() %}
+        <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
+        {% endif %}
+        {% if user.about %}
+        <p>
+            {{ user.about }}
+        </p>
+        {% endif %}
+        <p>
+            Member since {{ moment(user.register_time).format('L') }}. Last seen {{ moment(user.last_seen).fromNow() }}.
+        </p>
+        <p>
+            {{ user.posts.count() }} blog posts. {{ user.comments.count() }} comments.
+        </p>
+        <p>
+            <!--Follow Bottom-->
+            {% if current_user.can(Permission.FOLLOW) and user != current_user %}
+                {% if not current_user.is_following(user) %}
+                <a href="{{ url_for('main.follow', username=user.username) }}" class="btn btn-primary">Follow</a>
+                {% else %}
+                <a href="{{ url_for('main.unfollow', username=user.username) }}" class="btn btn-default">Unfollow</a>
+                {% endif %}
+            {% endif %}
+
+            <a href="{{ url_for('main.following', username=user.username) }}">Following: <span class="badge">{{ user.following.count() }}</span></a>
+            <a href="{{ url_for('main.follower', username=user.username) }}">Followers: <span class="badge">{{ user.follower.count() }}</span></a>
+            {% if current_user.is_authenticated and user != current_user and user.is_following(current_user) %}
+            | <span class="label label-default">Follows you</span>
+            {% endif %}
+        </p>
+        <p>
+        {% if user == current_user %}
+        <a class="btn btn-default" href="{{ url_for('main.edit_profile') }}">Edit Profile</a>
+        {% endif %}
+        {% if current_user.is_admin() %}
+        <a class="btn btn-danger" href="{{ url_for('main.admin_edit_profile', id=user.id) }}">Edit Profile [Admin]</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if posts %}
+<div class='posts'>
+    {% for post in posts %}
+    <li class='post'>
+        <div class="post-content">
+            <div class="post-date">{{ moment(post.time).fromNow() }}</div>
+            <div class="post-author">
+                <a href="{{ url_for('main.profile', username=post.author.username) }}">
+                    {% if post.author.nickname %}
+                    {{ post.author.nickname }}
+                    {% else %}
+                    {{ post.author.username }}
+                    {% endif %}
+                </a>
+            </div>
+            <div class="post-body">
+                {% if post.body_html %}
+                {{ post.body_html | safe }}
+                {% else %}
+                {{ post.body }}
+                {% endif %}
+            </div>
+        </div>
+        <div class='post-footer'>
+            {% if current_user.can(Permission.MODERATE) or current_user.id == post.author.id %}
+            <a href="{{ url_for('main.post_delete', id=post.id) }}">
+                <span class="label label-default">Delete</span>
+            </a>
+            {% endif %}
+            <a href="{{ url_for('main.post', id=post.id) }}">
+                <span class="label label-default">Comment</span>
+            </a>
+        </div>
+    </li>
+    {% endfor %}
+</div>
+
+{% if prev_url %}
+<p><a href="{{ prev_url }}">Newer posts</a></p>
+{% endif %}
+{% if next_url %}
+<p><a href="{{ next_url }}">Older posts</a></p>
+{% endif %}
+
+{% endif %}
+
+{% endblock page_content %}

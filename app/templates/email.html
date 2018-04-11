@@ -1,0 +1,15 @@
+<p>Dear {{ user.username }},</p>
+<p>
+    {% if arg=='confirm' %}
+    To confirm your account, please <a href="{{ url_for('auth.confirm', token=token, _external=True) }}">click here</a>.
+
+    {% elif arg=='reset' %}
+    To reset your password, please <a href="{{ url_for('auth.reset_password', token=token, _external=True) }}">click here</a>.
+
+    {% elif arg=='change' %}
+    To change your email address, please <a href="{{ url_for('auth.change_email', token=token,_external=True) }}">click here</a>.
+
+    {% endif %}
+
+    <p>Please don't reply this email.</p>
+</p>

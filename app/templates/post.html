@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Post{% endblock title %}
+
+{% block page_content %}
+
+<div class='post'>
+    <h3 class='post'>
+        {% if post.body_html %}
+        {{ post.body_html | safe }}
+        {% else %}
+        {{ post.body }}
+        {% endif %}
+    </h3>
+</div>
+
+{% if current_user.can(Permission.MODERATE) or current_user.id == post.author.id %}
+<hr>
+<div class="delete_post">
+<a href="{{ url_for('main.post_delete', id=post.id) }}">
+    <span class="label label-default">Delete</span>
+</a>
+</div>
+{% endif %}
+
+{% if current_user.can(Permission.COMMENT) %}
+<hr />
+<div class="comment-form">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endif %}
+
+{% if comments %}
+<ul class="comments">
+    {% for comment in comments %}
+    <li class="comment">
+        <div class="comment-content">
+            <div class="comment-date">{{ moment(comment.time).fromNow() }}</div>
+            <div class="comment-author">
+                <a href="{{ url_for('main.profile', username=comment.author.username) }}">
+                    {% if comment.author.nickname %}
+                    {{ comment.author.nickname }}
+                    {% else %}
+                    {{ comment.author.username }}
+                    {% endif %}
+                </a>
+            </div>
+            <div class="comment-body">
+                {{ comment.body }}
+            </div>
+        </div>
+        {% if current_user.can(Permission.MODERATE) or current_user.id == post.author.id or current_user.id == comment.author.id %}
+        <div class='post-footer'>
+            <a href="{{ url_for('main.comment_delete', id=comment.id) }}">
+                <span class="label label-default">Delete</span>
+            </a>
+        </div>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+
+{% if prev_url %}
+<a href="{{ prev_url }}">Newer comments</a>
+{% endif %}
+{% if next_url %}
+<a href="{{ next_url }}">Older comments</a>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

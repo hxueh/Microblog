@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>
+        {% if user.nickname %}
+        {{ user.nickname }}
+        {% else %}
+        {{ user.username }}
+        {% endif %}
+        's {{ title }}
+    </h1>
+</div>
+{% if title == 'Following' and follow %}
+{% for fol in follow %}
+<li class="follow">
+    <div class="follow-content">
+        <div class="follow-date">{{ moment(fol.time).fromNow() }}</div>
+        <div class="follow">
+            <a href="{{ url_for('main.profile', username=fol.followed.username) }}">
+                {% if fol.followed.nickname %}
+                {{ fol.followed.nickname }}
+                {% else %}
+                {{ fol.followed.nickname }}
+                {% endif %}
+            </a>
+        </div>
+    </div>
+</li>
+{% endfor %}
+{% endif %}
+
+{% if title == 'Follower' and follow %}
+{% for fol in follow %}
+<li class="follow">
+    <div class="follow-content">
+        <div class="follow-date">
+            {{ moment(fol.time).fromNow() }}
+        </div>
+        <div class="follow">
+            <a href="{{ url_for('main.profile', username=fol.follower.username) }}">
+                {% if fol.follower.nickname %}
+                {{ fol.follower.nickname }}
+                {% else %}
+                {{ fol.follower.username }}
+                {% endif %}
+            </a>
+        </div>
+    </div>
+</li>
+{% endfor %}
+
+{% if prev_url %}
+<p><a href="{{ prev_url }}">Newer follow</a></p>
+{% endif %}
+{% if next_url %}
+<p><a href="{{ next_url }}">Older follow</a></p>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
