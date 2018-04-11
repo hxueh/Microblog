@@ -21,11 +21,6 @@ You should create a database called 'microblog' first in MySQL.
 export FLASK_APP=application.py
 pip install -r requirements.txt
 
-flask shell
-Role.insert_roles()
-
-Control + D
-
 flask run
 ```
 
