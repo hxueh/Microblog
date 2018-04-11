@@ -18,4 +18,3 @@ def make_shell_context():
 def deploy():
     upgrade()
     Role.insert_roles()
-    User.add_self_follows()
