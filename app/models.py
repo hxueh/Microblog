@@ -43,8 +43,10 @@ class Role(db.Model):
             # Using number to represent permissions
             # If we have permisssion to moderate, we will have permission to write.
             'User': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE],
-            'Moderator': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE, Permission.MODERATE],
-            'Administrator': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE,
+            'Moderator': [Permission.FOLLOW, Permission.COMMENT,
+                          Permission.WRITE, Permission.MODERATE],
+            'Administrator': [Permission.FOLLOW, Permission.COMMENT,
+                              Permission.WRITE,
                               Permission.MODERATE, Permission.ADMIN]
         }
         # User, Moderator, Administrator
@@ -82,8 +84,10 @@ class Role(db.Model):
 
 class Follow(db.Model):
     __tablename__ = 'follow'
-    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
     time = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -107,10 +111,12 @@ class User(UserMixin, db.Model):
 
     # If we delete the user, delete all the posts
     # http://docs.sqlalchemy.org/en/latest/orm/cascades.html
-    posts = db.relationship('Post', backref='author', lazy='dynamic', cascade='all, delete-orphan')
+    posts = db.relationship('Post', backref='author', lazy='dynamic',
+                            cascade='all, delete-orphan')
 
     # If we delete the user, delete all the comments
-    comments = db.relationship('Comment', backref='author', lazy='dynamic', cascade='all, delete-orphan')
+    comments = db.relationship('Comment', backref='author', lazy='dynamic',
+                               cascade='all, delete-orphan')
 
     # If A follow B, A is a follower. Thus in the table, A will be marked as follower
     following = db.relationship('Follow',
@@ -190,7 +196,8 @@ class User(UserMixin, db.Model):
 
     def generate_email_changing_token(self, new_email):
         s = Serializer(current_app.config['SECRET_KEY'], expires_in=3600)
-        return s.dumps({'email_changing': self.id, 'new_email': new_email}).decode('utf-8')
+        return s.dumps({'email_changing': self.id,
+                        'new_email': new_email}).decode('utf-8')
 
     @staticmethod
     def verify_email_changing_token(token):
@@ -227,26 +234,30 @@ class User(UserMixin, db.Model):
 
     def unfollow(self, to_unfollow):
         if self.is_following(to_unfollow):
-            unfollow = Follow.query.filter_by(follower_id=self.id, followed_id=to_unfollow.id).first()
+            unfollow = Follow.query.filter_by(
+                follower_id=self.id, followed_id=to_unfollow.id).first()
             db.session.delete(unfollow)
             db.session.commit()
 
     def is_following(self, user):
-        follow = Follow.query.filter_by(follower_id=self.id, followed_id=user.id).first()
+        follow = Follow.query.filter_by(follower_id=self.id,
+                                        followed_id=user.id).first()
         if follow is None:
             return False
         else:
             return True
 
     def is_followed_by(self, user):
-        follow = Follow.query.filter_by(follower_id=user.id, followed_id=self.id).first()
+        follow = Follow.query.filter_by(follower_id=user.id,
+                                        followed_id=self.id).first()
         if follow is None:
             return False
         else:
             return True
 
     def create_twofa(self):
-        return OtpAuth(self.twofa).to_uri(type='totp', label=self.id, issuer='microblog')
+        return OtpAuth(self.twofa).to_uri(type='totp', label=self.id,
+                                          issuer='microblog')
 
     def verify_twofa(self, token):
         return OtpAuth(self.twofa).valid_totp(token)

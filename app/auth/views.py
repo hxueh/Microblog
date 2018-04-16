@@ -2,8 +2,9 @@ from flask import render_template, redirect, request, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from . import auth
 from .. import db
-from .form import LoginForm, SignupForm, ChangeEmailForm, ChangePasswordForm, ResetPasswordForm, \
-    ResetPasswordRequestForm, TwoFactorAuthenticatorForm, DeleteUserForm
+from .form import LoginForm, SignupForm, ChangeEmailForm, ChangePasswordForm, \
+    ResetPasswordForm, ResetPasswordRequestForm, \
+    TwoFactorAuthenticatorForm, DeleteUserForm
 from ..email import sendmail
 from ..models import User
 
@@ -50,10 +51,10 @@ def login():
             login_user(user, remember=form.remember.data)
             # http://flask.pocoo.org/docs/0.12/api/#flask.Request.args
             # Redirect back to where they were before login.
-            next = request.args.get('next')
-            if next is None:
-                next = url_for('main.index')
-            return redirect(next)
+            next_url = request.args.get('next')
+            if next_url is None:
+                next_url = url_for('main.index')
+            return redirect(next_url)
 
     return render_template('form.html', form=form, header=header, title=title)
 
@@ -65,11 +66,13 @@ def signup():
     header = title
 
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data, password=form.password.data)
+        user = User(username=form.username.data, email=form.email.data,
+                    password=form.password.data)
         db.session.add(user)
         db.session.commit()
         token = user.generate_email_token()
-        sendmail(user.email, 'Confirm your account.', 'email', user=user, token=token, arg='confirm')
+        sendmail(user.email, 'Confirm your account.', 'email', user=user,
+                 token=token, arg='confirm')
         flash('A confirmation email has been sent to your inbox.')
         return redirect(url_for('auth.login'))
 
@@ -107,7 +110,8 @@ def resend_confirm_email():
     
     else:
         token = current_user.generate_email_token()
-        sendmail(current_user.email, 'Confirm your account.', 'email', user=current_user, token=token, arg='confirm')
+        sendmail(current_user.email, 'Confirm your account.', 'email',
+                 user=current_user, token=token, arg='confirm')
         flash('A confirmation email has been sent to your email.')
         return redirect(url_for('auth.login'))
 
@@ -140,7 +144,8 @@ def reset_password_request():
         user = User.query.filter_by(email=form.email.data).first()
         if user is not None:
             token = user.generate_password_reset_token()
-            sendmail(user.email, 'Reset your password.', 'email', user=user, token=token, arg='reset')
+            sendmail(user.email, 'Reset your password.', 'email',
+                     user=user, token=token, arg='reset')
             flash('An email has been sent to you.')
         else:
             flash('User not exists.')
@@ -175,7 +180,8 @@ def change_email_request():
 
     if form.validate_on_submit():
         token = current_user.generate_email_changing_token(form.email.data)
-        sendmail(form.email.data, 'Changing Email Address.', 'email', user=current_user, token=token, arg='change')
+        sendmail(form.email.data, 'Changing Email Address.', 'email',
+                 user=current_user, token=token, arg='change')
         flash('A confirmation email has been sent to your new email account.')
         return redirect(url_for('main.index'))
 
@@ -204,22 +210,27 @@ def twofa():
                 current_user.twofa_enable = True
                 db.session.add(current_user)
                 db.session.commit()
-                flash('You have successfully enable two factor authentication.')
+                flash('You have successfully '
+                      'enable two factor authentication.')
             else:
                 flash('Token verification fail.')
                 db.session.rollback()
             return redirect(url_for('main.index'))
 
-        return render_template('twofa.html', title='2FA', header='Setup Two Factor Authentication',
+        return render_template('twofa.html', title='2FA',
+                               header='Setup Two Factor Authentication',
                                twofa_url=twofa_url, form=form)
     
     else:
         if form.validate_on_submit():
             if current_user.verify_twofa(form.token.data):
                 current_user.disable_twofa()
-                flash('You have successfully disable two factor authentication.')
+                flash('You have successfully '
+                      'disable two factor authentication.')
             return redirect(url_for('main.index'))
-        return render_template('twofa.html', title='2FA', header='Disable Two Factor Authentication', form=form)
+        return render_template('twofa.html', title='2FA',
+                               header='Disable Two Factor Authentication',
+                               form=form)
 
 
 @auth.route('/delete-account', methods=['GET', 'POST'])
