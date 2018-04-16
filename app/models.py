@@ -2,7 +2,7 @@ from datetime import datetime
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app, request
+from flask import current_app
 from markdown import markdown
 from bleach import linkify, clean
 from . import db, login_manager
@@ -19,8 +19,8 @@ class Permission:
     MODERATE = 8
     ADMIN = 16
 
-class Role(db.Model):
 
+class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), unique=True)
@@ -44,7 +44,8 @@ class Role(db.Model):
             # If we have permisssion to moderate, we will have permission to write.
             'User': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE],
             'Moderator': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE, Permission.MODERATE],
-            'Administrator': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE, Permission.MODERATE, Permission.ADMIN]
+            'Administrator': [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE,
+                              Permission.MODERATE, Permission.ADMIN]
         }
         # User, Moderator, Administrator
         # I don't know why but it must the Administrator can't add so I try 2 time
@@ -64,7 +65,7 @@ class Role(db.Model):
     def add_permissions(self, perm):
         if not self.has_permisssions(perm):
             self.permissions += perm
-    
+
     def remove_permissions(self, perm):
         if self.has_permisssions(perm):
             self.permissions -= perm
@@ -100,29 +101,29 @@ class User(UserMixin, db.Model):
     location = db.Column(db.String(64))
     register_time = db.Column(db.DateTime, default=datetime.utcnow)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     # Foreign Key
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
     # If we delete the user, delete all the posts
     # http://docs.sqlalchemy.org/en/latest/orm/cascades.html
-    posts = db.relationship('Post', backref='author', lazy='dynamic',  cascade='all, delete-orphan')
+    posts = db.relationship('Post', backref='author', lazy='dynamic', cascade='all, delete-orphan')
 
     # If we delete the user, delete all the comments
     comments = db.relationship('Comment', backref='author', lazy='dynamic', cascade='all, delete-orphan')
 
     # If A follow B, A is a follower. Thus in the table, A will be marked as follower
-    following = db.relationship('Follow', 
+    following = db.relationship('Follow',
                                 foreign_keys=[Follow.follower_id],
                                 backref=db.backref('follower', lazy='joined'),
                                 lazy='dynamic',
                                 cascade='all, delete-orphan')
 
     follower = db.relationship('Follow',
-                                foreign_keys=[Follow.followed_id],
-                                backref=db.backref('followed', lazy='joined'),
-                                lazy='dynamic',
-                                cascade='all, delete-orphan')
+                               foreign_keys=[Follow.followed_id],
+                               backref=db.backref('followed', lazy='joined'),
+                               lazy='dynamic',
+                               cascade='all, delete-orphan')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -133,16 +134,16 @@ class User(UserMixin, db.Model):
             else:
                 # Or make it regular user
                 self.role = Role.query.filter_by(name='User').first()
-        
+
         self.twofa = b64encode(urandom(16)).decode('utf-8')
         # commit changes to database.
         db.session.commit()
-    
+
     # Using property so that we can create user using User(password='password')
     @property
     def password(self):
         raise AttributeError('No one can read password.')
-    
+
     @password.setter
     def password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -160,7 +161,6 @@ class User(UserMixin, db.Model):
             load = s.loads(token.encode('utf-8'))
         except:
             return False
-
         if load['confirmed'] == self.id:
             self.confirmed = True
             db.session.add(self)
@@ -168,7 +168,7 @@ class User(UserMixin, db.Model):
             return True
         else:
             return False
-    
+
     def generate_password_reset_token(self):
         s = Serializer(current_app.config['SECRET_KEY'], expires_in=3600)
         return s.dumps({'password_reset': self.id}).decode('utf-8')
@@ -187,11 +187,11 @@ class User(UserMixin, db.Model):
         db.session.add(user)
         db.session.commit()
         return True
-    
+
     def generate_email_changing_token(self, new_email):
         s = Serializer(current_app.config['SECRET_KEY'], expires_in=3600)
         return s.dumps({'email_changing': self.id, 'new_email': new_email}).decode('utf-8')
-    
+
     @staticmethod
     def verify_email_changing_token(token):
         s = Serializer(current_app.config['SECRET_KEY'], expires_in=3600)
@@ -210,7 +210,7 @@ class User(UserMixin, db.Model):
 
     def can(self, perm):
         return self.role.has_permisssions(perm)
-    
+
     def is_admin(self):
         return self.can(Permission.ADMIN)
 
@@ -237,7 +237,7 @@ class User(UserMixin, db.Model):
             return False
         else:
             return True
-    
+
     def is_followed_by(self, user):
         follow = Follow.query.filter_by(follower_id=user.id, followed_id=self.id).first()
         if follow is None:
@@ -266,18 +266,22 @@ class User(UserMixin, db.Model):
 
 
 class AnomymousUser(AnonymousUserMixin):
-    def can(self, perm):
-        return False
-    def is_admin(self):
+    @staticmethod
+    def can(permission):
         return False
 
+    @staticmethod
+    def is_admin():
+        return False
+
+
 login_manager.anonymous_user = AnomymousUser
+
 
 # https://flask-login.readthedocs.io/en/latest/#how-it-works
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
 
 
 class Post(db.Model):
@@ -294,6 +298,7 @@ class Post(db.Model):
     def delete_post(self):
         db.session.delete(self)
         db.session.commit()
+
 
 # http://docs.sqlalchemy.org/en/latest/orm/events.html#sqlalchemy.orm.events.AttributeEvents.set
 @db.event.listens_for(Post.body, 'set')
@@ -313,6 +318,7 @@ class Comment(db.Model):
     def delete_comment(self):
         db.session.delete(self)
         db.session.commit()
+
 
 @db.event.listens_for(Comment.body, 'set')
 def convert_md_to_html(target, value, oldvalue, initiator):

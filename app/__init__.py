@@ -20,7 +20,6 @@ login_manager = LoginManager()
 qrcode = QRcode()
 login_manager.login_view = 'auth.login'
 
-# https://stackoverflow.com/questions/40326651/flask-mail-sending-email-asynchronously-based-on-flask-cookiecutter
 
 def create_app(config_name):
     
@@ -38,7 +37,7 @@ def create_app(config_name):
     qrcode.init_app(app)
     login_manager.init_app(app)
 
-    #http://flask.pocoo.org/docs/0.12/blueprints/#registering-blueprints
+    # http://flask.pocoo.org/docs/0.12/blueprints/#registering-blueprints
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 

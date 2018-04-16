@@ -1,4 +1,4 @@
-from flask import redirect, render_template, url_for, flash, abort, request, current_app
+from flask import redirect, render_template, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 
 from . import main
@@ -11,7 +11,8 @@ from ..decorators import admin_required
 @main.route('/explore')
 def explore():
     page = request.args.get('page', 1, type=int)
-    posts = Post.query.order_by(Post.time.desc()).paginate(page, current_app.config['POSTS_PER_PAGE'], True)
+    posts = Post.query.order_by(Post.time.desc()).\
+        paginate(page, current_app.config['POSTS_PER_PAGE'], True)
     next_url = url_for('main.explore', page=posts.next_num) if posts.has_next else None
     prev_url = url_for('main.explore', page=posts.prev_num) if posts.has_prev else None
     return render_template('index.html', posts=posts.items, next_url=next_url, prev_url=prev_url)
@@ -40,7 +41,8 @@ def index():
 def profile(username):
     page = request.args.get('page', 1, type=int)
     user = User.query.filter_by(username=username).first_or_404()
-    posts = Post.query.filter_by(author=user).order_by(Post.time.desc()).paginate(page, current_app.config['POSTS_PER_PAGE'], True)
+    posts = Post.query.filter_by(author=user).order_by(Post.time.desc()).\
+        paginate(page, current_app.config['POSTS_PER_PAGE'], True)
     next_url = url_for('main.profile', username=username, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('main.profile', username=username, page=posts.prev_num) if posts.has_prev else None
 
@@ -107,7 +109,8 @@ def admin_edit_profile(id):
 def post(id):
     post = Post.query.get_or_404(id)
     page = request.args.get('page', 1, type=int)
-    comments = Comment.query.filter_by(post=post).order_by(Comment.time.desc()).paginate(page, current_app.config['COMMENTS_PER_PAGE'], True)
+    comments = Comment.query.filter_by(post=post).order_by(Comment.time.desc()).\
+        paginate(page, current_app.config['COMMENTS_PER_PAGE'], True)
     next_url = url_for('main.post', id=id, page=comments.next_num) if comments.has_next else None
     prev_url = url_for('main.post', id=id, page=comments.prev_num) if comments.has_prev else None
 
@@ -119,7 +122,8 @@ def post(id):
         flash('Your comment has been commited.')
         return redirect(url_for('main.post', id=post.id))
 
-    return render_template('post.html', post=post, form=form, comments=comments.items, next_url=next_url, prev_url=prev_url)
+    return render_template('post.html', post=post, form=form, comments=comments.items,
+                           next_url=next_url, prev_url=prev_url)
 
 
 @main.route('/post/<int:id>/delete')
@@ -138,7 +142,9 @@ def post_delete(id):
 @main.route('/comment/<int:id>/delete')
 @login_required
 def comment_delete(id):
-    if current_user.can(Permission.MODERATE) or current_user._get_current_object() is Comment.query.get_or_404(id).author or current_user._get_current_object() is Comment.query.get_or_404(id).post.author:
+    if current_user.can(Permission.MODERATE) \
+            or current_user._get_current_object() is Comment.query.get_or_404(id).author \
+            or current_user._get_current_object() is Comment.query.get_or_404(id).post.author:
         Comment.query.get(id).delete_comment()
         flash('Comment deleted.')
     
@@ -175,12 +181,14 @@ def following(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
 
-    follow = Follow.query.filter_by(follower=user).filter(Follow.followed_id != user.id).order_by(Follow.time.desc()).paginate(page, current_app.config['FOLLOW_PER_PAGE'], True)
+    follow = Follow.query.filter_by(follower=user).filter(Follow.followed_id != user.id).order_by(Follow.time.desc()).\
+        paginate(page, current_app.config['FOLLOW_PER_PAGE'], True)
 
     next_url = url_for('main.following', username=username, page=follow.next_num) if follow.has_next else None
     prev_url = url_for('main.following', username=username, page=follow.prev_num) if follow.has_prev else None
 
-    return render_template('follow.html', user=user, follow=follow.items, title='Following', next_url=next_url, prev_url=prev_url)
+    return render_template('follow.html', user=user, follow=follow.items, title='Following',
+                           next_url=next_url, prev_url=prev_url)
 
 
 @main.route('/follower/<username>')
@@ -188,9 +196,11 @@ def follower(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
 
-    follow = Follow.query.filter_by(followed=user).filter(Follow.follower_id != user.id).order_by(Follow.time.desc()).paginate(page, current_app.config['FOLLOW_PER_PAGE'], True)
+    follow = Follow.query.filter_by(followed=user).filter(Follow.follower_id != user.id).order_by(Follow.time.desc()).\
+        paginate(page, current_app.config['FOLLOW_PER_PAGE'], True)
 
     next_url = url_for('main.following', username=username, page=follow.next_num) if follow.has_next else None
     prev_url = url_for('main.following', username=username, page=follow.prev_num) if follow.has_prev else None
 
-    return render_template('follow.html', user=user, follow=follow.items, title='Follower', next_url=next_url, prev_url=prev_url)
+    return render_template('follow.html', user=user, follow=follow.items, title='Follower',
+                           next_url=next_url, prev_url=prev_url)

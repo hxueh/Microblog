@@ -2,9 +2,10 @@ from flask_mail import Message
 from flask import current_app, render_template
 from . import mail
 from .decorators import async_task
-from config import Config
+
 
 def sendmail(to, subject='TEST', template=None, **kwargs):
+    # https://stackoverflow.com/questions/40326651/flask-mail-sending-email-asynchronously-based-on-flask-cookiecutter
     app = current_app._get_current_object()
     msg = Message()
     # kwargs are arguments, like username

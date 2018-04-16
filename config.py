@@ -6,6 +6,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 Mail_Provider = 'Google'
 
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'ThisIsAHardKey'
 

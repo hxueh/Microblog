@@ -1,9 +1,9 @@
 from flask import render_template, redirect, request, url_for, flash
-from flask_login import login_user, logout_user, login_required, login_manager, current_user
-import qrcode
+from flask_login import login_user, logout_user, login_required, current_user
 from . import auth
 from .. import db
-from .form import LoginForm, SignupForm, ChangeEmailForm, ChangePasswordForm, ResetPasswordForm, ResetPasswordRequestForm, TwoFactorAuthenticatorForm, DeleteUserForm
+from .form import LoginForm, SignupForm, ChangeEmailForm, ChangePasswordForm, ResetPasswordForm, \
+    ResetPasswordRequestForm, TwoFactorAuthenticatorForm, DeleteUserForm
 from ..email import sendmail
 from ..models import User
 
@@ -36,7 +36,8 @@ def login():
 
     if form.validate_on_submit():
         # We can user username or email address as identification
-        user = User.query.filter_by(username=form.user.data).first() or User.query.filter_by(email=form.user.data).first()
+        user = User.query.filter_by(username=form.user.data).first() \
+               or User.query.filter_by(email=form.user.data).first()
         if user is None:
             flash('User not exists.')
             return redirect(url_for('auth.login'))
@@ -85,7 +86,7 @@ def logout():
 @auth.route('/confirm/<token>')
 @login_required
 def confirm(token):
-    if current_user.confirmed == True:
+    if current_user.confirmed:
         # If the user is confirmed
         return redirect(url_for('main.index'))
 
@@ -100,7 +101,7 @@ def confirm(token):
 @auth.route('/resend-confirm-email')
 @login_required
 def resend_confirm_email():
-    if current_user.confirmed == True:
+    if current_user.confirmed:
         flash('You have been confirmed.')
         return redirect(url_for('main.index'))
     
@@ -209,7 +210,8 @@ def twofa():
                 db.session.rollback()
             return redirect(url_for('main.index'))
 
-        return render_template('twofa.html', title='2FA', header='Setup Two Factor Authentication', twofa_url=twofa_url, form=form)
+        return render_template('twofa.html', title='2FA', header='Setup Two Factor Authentication',
+                               twofa_url=twofa_url, form=form)
     
     else:
         if form.validate_on_submit():
